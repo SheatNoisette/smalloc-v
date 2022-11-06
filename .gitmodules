@@ -1,0 +1,3 @@
+[submodule "smalloc"]
+	path = smalloc
+	url = https://github.com/sheatnoisette/smalloc.git

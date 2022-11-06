@@ -1,0 +1,6 @@
+*.c
+*.log
+.vscode/
+*.exe
+smalloc_demo
+*.dSYM
