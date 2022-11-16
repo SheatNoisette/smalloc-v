@@ -1,6 +1,6 @@
 CC ?= clang
 V_COMPILER = $(shell which v)
-V_FLAGS = -skip-unused -gc none -autofree
+V_FLAGS = -skip-unused -gc none -autofree -cflags -DVALLOC_POOL_SIZE=16000
 CFILE_OUT = smalloc_demo
 CFLAGS = -O2
 
