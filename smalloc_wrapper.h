@@ -30,14 +30,17 @@
 
 // Get size of the pool - 32 ko by default
 #ifndef VALLOC_POOL_SIZE
-#define VALLOC_POOL_SIZE 1024 * 32
+#define VALLOC_POOL_SIZE (1024 * 32)
 #endif
 
-// Custom malloc, free, realloc, calloc
-// Here you can add your own code to track memory allocations or swap out the
-// memory allocator
+// Memory pool that will simulate the heap - 32 ko by default
+// No need to zero it, malloc doesn't need it to be zeroed and calloc will do it
 static char memory[VALLOC_POOL_SIZE];
+
+// Pool configuration
 static struct smalloc_pool pool;
+
+// If the pool is initialized
 static int smalloc_initialised = 0;
 
 #endif
