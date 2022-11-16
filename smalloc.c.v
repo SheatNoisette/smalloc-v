@@ -30,6 +30,31 @@ fn C.vt_free(voidptr)
 fn C.vt_realloc(voidptr, int) voidptr
 fn C.vt_calloc(int, int) voidptr
 
+struct C.smalloc_pool {}
+
+type FnUndefinedBehavior = fn (&C.smalloc_pool, voidptr)
+type FnOutOfMemory = fn (&C.smalloc_pool, u32)
+
+// Get access to static variables
+#define _extern_get_pool() &pool
+fn C._extern_get_pool() &C.smalloc_pool
+#define _extern_smalloc_initialised() smalloc_initialised
+fn C._extern_smalloc_initialised() int
+#define _extern_smalloc_initialised_set(x) smalloc_initialised = x
+fn C._extern_smalloc_initialised_set(int)
+#define _extern_get_memory_ptr() memory
+fn C._extern_get_memory_ptr() voidptr
+
+fn C.init_smalloc()
+
+// Smalloc definitions
+fn C.sm_free_pool(&C.smalloc_pool, voidptr)
+fn C.sm_malloc_pool(&C.smalloc_pool, u32) voidptr
+fn C.sm_calloc_pool(&C.smalloc_pool, u32, u32) voidptr
+fn C.sm_realloc_pool(&C.smalloc_pool, voidptr, u32) voidptr
+fn C.sm_set_ub_handler(FnUndefinedBehavior)
+fn C.sm_set_pool(&C.smalloc_pool, voidptr, u32, int, FnOutOfMemory) int
+
 // C library functions
 fn C.puts(&u8) int
 fn C.putchar(byte)
@@ -53,6 +78,26 @@ fn C.putchar(byte)
 // Custom malloc calls
 // ----------------------------
 
+fn pool_out_of_memory(pool &C.smalloc_pool, size u32) {
+	C.puts(c"Out of memory")
+}
+
+fn pool_unexpected_behavior(poll &C.smalloc_pool, adress voidptr) {
+	C.puts(c"Unexpected behavior - invalid address")
+}
+
+fn init_smalloc() {
+	C.sm_set_ub_handler(pool_unexpected_behavior)
+
+	set_pool := C.sm_set_pool(C._extern_get_pool(), C._extern_get_memory_ptr(), C.VALLOC_POOL_SIZE, 1, pool_out_of_memory)
+
+	if set_pool != 0 {
+		C.puts(c"Failed to set pool")
+		C.exit(1)
+	}
+	C._extern_smalloc_initialised_set(1)
+}
+
 [export: 'custom_malloc']
 [markused]
 fn custom_malloc(size int, line int) voidptr {
@@ -64,7 +109,12 @@ fn custom_malloc(size int, line int) voidptr {
 		print_number_noalloc(u64(line))
 		C.puts(c'};')
 	}
-	return C.vt_alloc(size)
+
+	if C._extern_smalloc_initialised() == 0 {
+		init_smalloc()
+	}
+
+	return C.sm_malloc_pool(C._extern_get_pool(), u32(size))
 }
 
 [export: 'custom_free']
@@ -78,7 +128,13 @@ fn custom_free(ptr voidptr, line int) {
 		print_number_noalloc(u64(line))
 		C.puts(c'};')
 	}
-	C.vt_free(ptr)
+
+	// Smalloc has not been initialised yet, initialise it
+	if C._extern_smalloc_initialised() == 0 {
+		init_smalloc()
+	}
+
+	C.sm_free_pool(C._extern_get_pool(), ptr)
 }
 
 [export: 'custom_realloc']
@@ -94,7 +150,13 @@ fn custom_realloc(ptr voidptr, size int, line int) voidptr {
 		print_number_noalloc(u64(line))
 		C.puts(c'};')
 	}
-	return C.vt_realloc(ptr, size)
+
+	// Smalloc has not been initialised yet, initialise it
+	if C._extern_smalloc_initialised() == 0 {
+		init_smalloc()
+	}
+
+	return C.sm_realloc_pool(C._extern_get_pool(), ptr, size)
 }
 
 [export: 'custom_calloc']
@@ -111,7 +173,11 @@ fn custom_calloc(n int, size int, line int) voidptr {
 		C.puts(c'};')
 	}
 
-	buffer := C.vt_calloc(n, size)
+	if C._extern_smalloc_initialised() == 0 {
+		init_smalloc()
+	}
+
+	buffer := C.sm_calloc_pool(C._extern_get_pool(), n, size)
 
 	if buffer == 0 {
 		$if debug {
