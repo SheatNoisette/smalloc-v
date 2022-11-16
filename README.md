@@ -48,13 +48,13 @@ project:
 - The content of the `smalloc` folder.
 
 You don't need to modify your code, but you need to add the following line to
-your Makefile/build system to avoid conflict with how the default V compiler
-configuration:
+your Makefile/build system to avoid conflict with the integrated garbage
+collector:
 ```bash
-$ v -gc none run .
+$ v -gc none -autofree run .
 ```
 V autofree is recommended to avoid running out of memory, but not mandatory as
-it is in beta currently.
+it is in beta currently. You might run out of memory if you don't use it.
 
 You can configure the size of the static memory pool by modifying the
 `SMALLOC_POOL_SIZE` macro in `smalloc_wrapper.h` or by overriding it in your
@@ -70,4 +70,8 @@ and may lead to unexpected behavior or a crash.
 
 # License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE)
-file for details
+file for details.
+
+This project is based on a modified version of the
+[smalloc](https://github.com/electrorys/smalloc) project by Andrey Rys and on
+[VAllocTracker](https://github.com/SheatNoisette/VAllocTracker).
