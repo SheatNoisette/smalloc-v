@@ -1,7 +1,7 @@
 Module {
 	name: 'smalloc'
-	description: 'A simple module to track the number of malloc calls'
-	version: '0.0'
+	description: 'A simple module to override the default memory allocator'
+	version: '0.1.1'
 	license: 'MIT'
 	dependencies: []
 }
