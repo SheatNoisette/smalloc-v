@@ -1,14 +1,15 @@
 # smalloc-v
 
-Abusing V compiler to track memory allocations. It is a proof of concept and
+Abusing V compiler to add static memory allocations. It is a proof of concept and
 it is not meant to be used in production.
 
 Using smalloc as a static memory alloc instead of malloc. This could enable
 the use of V in embedded systems.
 
 **Important**: This is a hack, and it may break your code. You have been warned.
+As this is experimental and modify the behavior of the generated C code, it
+won't be pushed to vpm.
 
-Cloning the repo:
 ```bash
 $ git clone https://github.com/sheatnoisette/smalloc-v.git
 $ cd smalloc-v
@@ -37,6 +38,35 @@ A sample Dockerfile is provided to build the demo in a container.
 $ docker build -f Dockerfile -t v-linux:latest .
 $ docker run -it --volume=$(pwd):/work/ --workdir=/work/ --rm v-linux:latest
 ```
+
+## Integration into a project
+
+To use smalloc in your project, you need to add the following files to your
+project:
+- `smalloc_wrapper.h`,
+- `smalloc.c.v`,
+- The content of the `smalloc` folder.
+
+You don't need to modify your code, but you need to add the following line to
+your Makefile/build system to avoid conflict with how the default V compiler
+configuration:
+```bash
+$ v -gc none run .
+```
+V autofree is recommended to avoid running out of memory, but not mandatory as
+it is in beta currently.
+
+You can configure the size of the static memory pool by modifying the
+`SMALLOC_POOL_SIZE` macro in `smalloc_wrapper.h` or by overriding it in your
+VFLAGS:
+```bash
+# 32 ko of static memory pool
+$ v -gc none -autofree -cflags -DVALLOC_POOL_SIZE=32000 run .
+```
+As of now, the default value is 32 ko. 12 Ko is the bare minimum amount of
+memory to run a basic V program. Increase the value if you need more memory.
+Please note this is not a fit for all solution, memory fragmentation can happen
+and may lead to unexpected behavior or a crash.
 
 # License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE)
